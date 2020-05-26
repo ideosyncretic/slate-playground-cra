@@ -34,5 +34,9 @@
       "last 1 firefox version",
       "last 1 safari version"
     ]
+  },
+  "devDependencies": {
+    "is-hotkey": "^0.1.6",
+    "slate-history": "^0.58.1"
   }
 }
