@@ -4,7 +4,7 @@ import React, { useCallback, useMemo, useState } from "react";
 import styled from "styled-components";
 import { withHistory } from "slate-history";
 // Import the Slate editor factory.
-import { createEditor, Editor, Text, Transforms } from "slate";
+import { createEditor, Editor, Text, Transforms, Range } from "slate";
 // Import the Slate components and React plugin.
 import { Slate, Editable, withReact, useSlate } from "slate-react";
 
@@ -138,6 +138,26 @@ const Leaf = ({ attributes, children, leaf }) => {
     children = <u>{children}</u>;
   }
 
+  // intersecting annotations
+  if (leaf.annotations) {
+    // find out if depth is 0, 1, 2
+    let opacityStep = 0.3;
+    let opacity;
+    leaf.annotations.length >= 2
+      ? (opacity = opacityStep * 2)
+      : (opacity = opacityStep * leaf.annotations.length);
+
+    children = (
+      <span
+        style={{
+          backgroundColor: `rgba(19,111,99, ${opacity})`,
+        }}
+      >
+        {children}
+      </span>
+    );
+  }
+
   return <span {...attributes}>{children}</span>;
 };
 
@@ -156,20 +176,20 @@ const BlockButton = ({ format, icon }) => {
   );
 };
 
-const Markbutton = ({ format, icon }) => {
-  const editor = useSlate();
-  return (
-    <button
-      active={isMarkActive(editor, format)}
-      onMouseDown={(event) => {
-        event.preventDefault();
-        toggleMark(editor, format);
-      }}
-    >
-      {/* <Icon>{icon}</Icon> */}
-    </button>
-  );
-};
+// const Markbutton = ({ format, icon }) => {
+//   const editor = useSlate();
+//   return (
+//     <button
+//       active={isMarkActive(editor, format)}
+//       onMouseDown={(event) => {
+//         event.preventDefault();
+//         toggleMark(editor, format);
+//       }}
+//     >
+//       {/* <Icon>{icon}</Icon> */}
+//     </button>
+//   );
+// };
 
 const EditableContainer = styled.div`
   background: white;
@@ -197,9 +217,16 @@ const initialValue = [
   {
     type: "paragraph",
     children: [
-      { text: "This is editable " },
-      { text: "rich", bold: true },
-      { text: " text, " },
+      {
+        text: "This is editable ",
+        annotations: ["annotation_1"],
+      },
+      {
+        text: "rich",
+        bold: true,
+        annotations: ["annotation_1", "annotation_2", "annotation_3"],
+      },
+      { text: " text, ", annotations: ["annotation_2"] },
       { text: "much", italic: true },
       { text: " better than a " },
       { text: "<textarea>", code: true },
@@ -213,7 +240,7 @@ const initialValue = [
         text:
           "Since it's rich text, you can do things like turn a selection of text ",
       },
-      { text: "bold", bold: true },
+      { text: "bold and underline", bold: true, underline: true },
       {
         text:
           ", or add a semantically rendered block quote in the middle of the page, like this:",
