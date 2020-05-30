@@ -1,44 +1,18 @@
 // import "@atlaskit/css-reset";
 import React, { useCallback, useMemo, useState } from "react";
 import { withHistory } from "slate-history";
-// Import the Slate editor factory.
-import { createEditor, Text } from "slate";
-// Import the Slate components and React plugin.
+import { createEditor } from "slate";
 import { Slate, Editable, withReact } from "slate-react";
 
 import { EditableContainer, Page } from "./components/styled-components";
+import { handleKeyDownEvent } from "./helpers/marks";
 
-const HighlightDecorator = () => {
+const LeafAnnotations = () => {
   const [editorValue, setEditorValue] = useState(initialEditorValue);
-  // NOTE highlights stored separately from main content
-  const [highlights, setHighlights] = useState(initialHighlights);
 
   const renderElement = useCallback((props) => <Element {...props} />, []);
   const renderLeaf = useCallback((props) => <Leaf {...props} />, []);
   const editor = useMemo(() => withHistory(withReact(createEditor())), []);
-
-  const highlightDecorator = useCallback(
-    ([node, path]) => {
-      // console.log("node", node);
-      const ranges = [];
-      // console.log("highlights", highlights);
-
-      if (highlights && Text.isText(node)) {
-        // for every highlight we have
-        highlights.map((highlight) => {
-          // console.log("current highlight", highlight);
-          // push the range to be decorated
-          ranges.push({
-            anchor: { path, offset: highlight.anchorOffset },
-            focus: { path, offset: highlight.focusOffset },
-            highlighted: true,
-          });
-        });
-      }
-      return ranges;
-    },
-    [highlights]
-  );
 
   return (
     <Slate
@@ -54,7 +28,9 @@ const HighlightDecorator = () => {
             placeholder="Enter some rich text…"
             spellCheck
             autoFocus
-            decorate={highlightDecorator}
+            onKeyDown={(event) => {
+              handleKeyDownEvent(event, editor);
+            }}
           />
         </EditableContainer>
       </Page>
@@ -122,7 +98,7 @@ const Leaf = ({ attributes, children, leaf }) => {
   return <span {...attributes}>{children}</span>;
 };
 
-const initialHighlights = [
+const annotations = [
   {
     id: "id_1_This", // "This"
     text: "This",
@@ -179,4 +155,4 @@ const initialEditorValue = [
     children: [{ text: "Try it out for yourself!" }],
   },
 ];
-export default HighlightDecorator;
+export default LeafAnnotations;
