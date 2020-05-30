@@ -15,8 +15,9 @@ const HOTKEYS = {
   "mod+`": "code",
 };
 
-const Highlights = () => {
+const HighlightDecorator = () => {
   const [editorValue, setEditorValue] = useState(initialEditorValue);
+  // NOTE highlights stored separately from main content
   const [highlights, setHighlights] = useState(initialHighlights);
 
   const renderElement = useCallback((props) => <Element {...props} />, []);
@@ -24,7 +25,6 @@ const Highlights = () => {
   const editor = useMemo(() => withHistory(withReact(createEditor())), []);
 
   const highlightDecorator = useCallback(
-    // callback function
     ([node, path]) => {
       // console.log("node", node);
       const ranges = [];
@@ -44,7 +44,6 @@ const Highlights = () => {
       }
       return ranges;
     },
-    // callback dependencies array
     [highlights]
   );
 
@@ -233,4 +232,4 @@ const initialEditorValue = [
     children: [{ text: "Try it out for yourself!" }],
   },
 ];
-export default Highlights;
+export default HighlightDecorator;

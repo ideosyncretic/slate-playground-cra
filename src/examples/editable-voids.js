@@ -1,18 +1,18 @@
-import React, { useState, useMemo } from "react";
-import { Transforms, createEditor } from "slate";
-import { Slate, Editable, useEditor, withReact } from "slate-react";
-import { withHistory } from "slate-history";
-import { css } from "emotion";
+import React, { useState, useMemo } from 'react'
+import { Transforms, createEditor } from 'slate'
+import { Slate, Editable, useEditor, withReact } from 'slate-react'
+import { withHistory } from 'slate-history'
+import { css } from 'emotion'
 
-import RichTextEditor from "./richtext";
-import { Button, Icon, Toolbar } from "../components";
+import RichTextEditor from './richtext'
+import { Button, Icon, Toolbar } from '../components'
 
 const EditableVoidsExample = () => {
-  const [value, setValue] = useState(initialValue);
+  const [value, setValue] = useState(initialValue)
   const editor = useMemo(
     () => withEditableVoids(withHistory(withReact(createEditor()))),
     []
-  );
+  )
 
   return (
     <Slate editor={editor} value={value} onChange={setValue}>
@@ -21,46 +21,46 @@ const EditableVoidsExample = () => {
       </Toolbar>
 
       <Editable
-        renderElement={(props) => <Element {...props} />}
+        renderElement={props => <Element {...props} />}
         placeholder="Enter some text..."
       />
     </Slate>
-  );
-};
+  )
+}
 
-const withEditableVoids = (editor) => {
-  const { isVoid } = editor;
+const withEditableVoids = editor => {
+  const { isVoid } = editor
 
-  editor.isVoid = (element) => {
-    return element.type === "editable-void" ? true : isVoid(element);
-  };
+  editor.isVoid = element => {
+    return element.type === 'editable-void' ? true : isVoid(element)
+  }
 
-  return editor;
-};
+  return editor
+}
 
-const insertEditableVoid = (editor) => {
-  const text = { text: "" };
-  const voidNode = { type: "editable-void", children: [text] };
-  Transforms.insertNodes(editor, voidNode);
-};
+const insertEditableVoid = editor => {
+  const text = { text: '' }
+  const voidNode = { type: 'editable-void', children: [text] }
+  Transforms.insertNodes(editor, voidNode)
+}
 
-const Element = (props) => {
-  const { attributes, children, element } = props;
+const Element = props => {
+  const { attributes, children, element } = props
 
   switch (element.type) {
-    case "editable-void":
-      return <EditableVoidElement {...props} />;
+    case 'editable-void':
+      return <EditableVoidElement {...props} />
     default:
-      return <p {...attributes}>{children}</p>;
+      return <p {...attributes}>{children}</p>
   }
-};
+}
 
 const unsetWidthStyle = css`
   width: unset;
-`;
+`
 
 const EditableVoidElement = ({ attributes, children, element }) => {
-  const [inputValue, setInputValue] = useState("");
+  const [inputValue, setInputValue] = useState('')
 
   return (
     // Need contentEditable=false or Firefox has issues with certain input types.
@@ -78,8 +78,8 @@ const EditableVoidElement = ({ attributes, children, element }) => {
           `}
           type="text"
           value={inputValue}
-          onChange={(e) => {
-            setInputValue(e.target.value);
+          onChange={e => {
+            setInputValue(e.target.value)
           }}
         />
         <h4>Left or right handed:</h4>
@@ -88,7 +88,7 @@ const EditableVoidElement = ({ attributes, children, element }) => {
           type="radio"
           name="handedness"
           value="left"
-        />{" "}
+        />{' '}
         Left
         <br />
         <input
@@ -96,7 +96,7 @@ const EditableVoidElement = ({ attributes, children, element }) => {
           type="radio"
           name="handedness"
           value="right"
-        />{" "}
+        />{' '}
         Right
         <h4>Tell us about yourself:</h4>
         <div
@@ -110,45 +110,45 @@ const EditableVoidElement = ({ attributes, children, element }) => {
       </div>
       {children}
     </div>
-  );
-};
+  )
+}
 
 const InsertEditableVoidButton = () => {
-  const editor = useEditor();
+  const editor = useEditor()
   return (
     <Button
-      onMouseDown={(event) => {
-        event.preventDefault();
-        insertEditableVoid(editor);
+      onMouseDown={event => {
+        event.preventDefault()
+        insertEditableVoid(editor)
       }}
     >
       <Icon>add</Icon>
     </Button>
-  );
-};
+  )
+}
 
 const initialValue = [
   {
-    type: "paragraph",
+    type: 'paragraph',
     children: [
       {
         text:
-          "In addition to nodes that contain editable text, you can insert void nodes, which can also contain editable elements, inputs, or an entire other Slate editor.",
+          'In addition to nodes that contain editable text, you can insert void nodes, which can also contain editable elements, inputs, or an entire other Slate editor.',
       },
     ],
   },
   {
-    type: "editable-void",
-    children: [{ text: "" }],
+    type: 'editable-void',
+    children: [{ text: '' }],
   },
   {
-    type: "paragraph",
+    type: 'paragraph',
     children: [
       {
-        text: "",
+        text: '',
       },
     ],
   },
-];
+]
 
-export default EditableVoidsExample;
+export default EditableVoidsExample

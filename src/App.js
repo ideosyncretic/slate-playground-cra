@@ -1,5 +1,5 @@
 import React from "react";
-import Highlights from "./explorations/highlights";
+import Highlights from "./explorations/highlight_decorator";
 
 const App = () => {
   return <Highlights></Highlights>;
