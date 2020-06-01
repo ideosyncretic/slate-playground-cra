@@ -99,10 +99,18 @@ const Leaf = ({ attributes, children, leaf }) => {
   }
 
   if (leaf.highlighted) {
-    children = <span style={{ backgroundColor: "#ffeeba" }}>{children}</span>;
+    children = (
+      <span
+        style={{
+          backgroundColor: "#ffeeba",
+        }}
+      >
+        {children}
+      </span>
+    );
   }
 
-  // an "additive" blue colour style
+  // example of arbitrary property
   if (leaf.blue) {
     // find out if depth is 0, 1, 2
     let opacity;

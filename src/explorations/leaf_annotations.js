@@ -1,11 +1,22 @@
 // import "@atlaskit/css-reset";
 import React, { useCallback, useMemo, useState } from "react";
 import { withHistory } from "slate-history";
-import { createEditor, useEditor } from "slate";
-import { Slate, Editable, withReact } from "slate-react";
+import { createEditor, Editor, Transforms } from "slate";
+import { Slate, Editable, withReact, useEditor } from "slate-react";
+import { v4 as uuidv4 } from "uuid";
+import isHotkey from "is-hotkey";
 
+import { toggleMark } from "./helpers/marks";
 import { EditableContainer, Page } from "./components/styled-components";
-import { handleKeyDownEvent } from "./helpers/marks";
+
+const HOTKEYS = {
+  "mod+b": "bold",
+  "mod+i": "italic",
+  "mod+u": "underline",
+  "mod+`": "code",
+};
+
+const ANNOTATION_ID_PREFIX = "ANNOTATION-";
 
 const LeafAnnotations = () => {
   const [editorValue, setEditorValue] = useState(initialEditorValue);
@@ -13,11 +24,36 @@ const LeafAnnotations = () => {
 
   const renderElement = useCallback((props) => <Element {...props} />, []);
   const renderLeaf = useCallback((props) => <Leaf {...props} />, []);
-  const editor = useMemo(() => withHistory(withReact(createEditor())), []);
+
+  const BaseEditor = useMemo(() => withHistory(withReact(createEditor())), []);
+
+  const CodexEditor = {
+    ...BaseEditor,
+
+    annotateSelection(editor) {
+      const newAnnotation = {
+        id: ANNOTATION_ID_PREFIX + uuidv4(),
+        range: editor.selection,
+      };
+
+      // update separate annotation state
+      setAnnotations({ ...annotations, newAnnotation });
+
+      // add an annotation id property to selection's nodes
+      Transforms.setNodes(
+        editor,
+        { [newAnnotation.id]: newAnnotation },
+        {
+          match: (node) => Text.isText(node),
+          split: true,
+        }
+      );
+    },
+  };
 
   return (
     <Slate
-      editor={editor}
+      editor={CodexEditor}
       value={editorValue}
       onChange={(newValue) => setEditorValue(newValue)}
     >
@@ -30,7 +66,13 @@ const LeafAnnotations = () => {
             spellCheck
             autoFocus
             onKeyDown={(event) => {
-              handleKeyDownEvent(event, editor);
+              for (const hotkey in HOTKEYS) {
+                if (isHotkey(hotkey, event)) {
+                  event.preventDefault();
+                  const mark = HOTKEYS[hotkey];
+                  toggleMark(useEditor, mark);
+                }
+              }
             }}
           />
         </EditableContainer>
@@ -75,22 +117,33 @@ const Leaf = ({ attributes, children, leaf }) => {
     children = <u>{children}</u>;
   }
 
-  if (leaf.annotations) {
-    if (leaf.annotations.length === 1) {
+  // check if leaf has annotations
+  let annotationCount = 0;
+  Object.keys(leaf).length > 0 &&
+    Object.keys(leaf).map((key) => {
+      if (key.indexOf(ANNOTATION_ID_PREFIX) > -1) {
+        console.log("Found an annotation, id=", key);
+        annotationCount += 1;
+      }
+    });
+
+  // if leaf has annotations
+  if (annotationCount) {
+    if (annotationCount === 1) {
       children = (
         <span
           style={{ backgroundColor: "salmon" }}
-          onClick={() => console.log(leaf.annotations)}
+          onClick={() => console.log("I'm annotated once!")}
         >
           {children}
         </span>
       );
     }
-    if (leaf.annotations.length === 2) {
+    if (annotationCount === 2) {
       children = (
         <span
           style={{ backgroundColor: "red" }}
-          onClick={() => console.log(leaf.annotations)}
+          onClick={() => console.log("I'm annotated multiple times!")}
         >
           {children}
         </span>
@@ -98,7 +151,7 @@ const Leaf = ({ attributes, children, leaf }) => {
     }
   }
 
-  // example of arbitrary mark value
+  // example of arbitrary property
   if (leaf.blue) {
     // find out if depth is 0, 1, 2
     let opacity;
@@ -126,8 +179,8 @@ Try it out for yourself!
 
 const initialAnnotations = [
   {
-    id: "annotation_id_1", // "This is"
-    text: "This is",
+    id: "ANNOTATION-1", // "This is"
+    // parentTextString: "This is",
     range: {
       anchor: {
         path: [0, 0],
@@ -140,8 +193,8 @@ const initialAnnotations = [
     },
   },
   {
-    id: "annotation_id_2",
-    text: "is editable",
+    id: "ANNOTATION-2", // "is editable"
+    // parentTextString: "is editable",
     range: {
       anchor: {
         path: [0, 0],
@@ -162,22 +215,23 @@ const initialEditorValue = [
       {
         text: "This",
         blue: ["blue_1"],
-        annotations: ["annotation_id_1"],
+        "ANNOTATION-1": true,
       },
       {
         text: " ",
         blue: ["blue_1"],
-        annotations: ["annotation_id_1"],
+        "ANNOTATION-1": true,
       },
       {
         text: "is",
         blue: ["blue_1"],
-        annotations: ["annotation_id_1", "annotation_id_2"],
+        "ANNOTATION-1": true,
+        "ANNOTATION-2": true,
       },
       {
         text: " editable",
         blue: ["blue_1"],
-        annotations: ["annotation_id_2"],
+        "ANNOTATION-2": true,
       },
       {
         text: " rich",

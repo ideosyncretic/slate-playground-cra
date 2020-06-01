@@ -3,6 +3,7 @@ const HOTKEYS = {
   "mod+i": "italic",
   "mod+u": "underline",
   "mod+`": "code",
+  "mod+a": "annotations",
 };
 
 export default HOTKEYS;
