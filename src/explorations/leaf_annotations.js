@@ -9,10 +9,26 @@ import { handleKeyDownEvent } from "./helpers/marks";
 
 const LeafAnnotations = () => {
   const [editorValue, setEditorValue] = useState(initialEditorValue);
+  const [annotations, setAnnotations] = useState(initialAnnotations);
 
   const renderElement = useCallback((props) => <Element {...props} />, []);
   const renderLeaf = useCallback((props) => <Leaf {...props} />, []);
-  const editor = useMemo(() => withHistory(withReact(createEditor())), []);
+  const baseEditor = useMemo(() => withHistory(withReact(createEditor())), []);
+
+  const withAnnotations = (editorInstance) => {
+    // example
+    const { addMark } = editorInstance;
+    editorInstance.addMark = (editor, key, val) => {
+      console.log("Key = ", key);
+      console.log("Value = ", val);
+      // remember to fallback on default behaviour
+      addMark(editor, key, val);
+    };
+
+    return editorInstance; // extended editor
+  };
+
+  const editor = withAnnotations(baseEditor);
 
   return (
     <Slate
@@ -74,11 +90,30 @@ const Leaf = ({ attributes, children, leaf }) => {
     children = <u>{children}</u>;
   }
 
-  if (leaf.highlighted) {
-    children = <span style={{ backgroundColor: "#ffeeba" }}>{children}</span>;
+  if (leaf.annotations) {
+    if (leaf.annotations.length === 1) {
+      children = (
+        <span
+          style={{ backgroundColor: "salmon" }}
+          onClick={() => console.log(leaf.annotations)}
+        >
+          {children}
+        </span>
+      );
+    }
+    if (leaf.annotations.length === 2) {
+      children = (
+        <span
+          style={{ backgroundColor: "red" }}
+          onClick={() => console.log(leaf.annotations)}
+        >
+          {children}
+        </span>
+      );
+    }
   }
 
-  // an "additive" blue colour style
+  // example of arbitrary mark value
   if (leaf.blue) {
     // find out if depth is 0, 1, 2
     let opacity;
@@ -98,18 +133,40 @@ const Leaf = ({ attributes, children, leaf }) => {
   return <span {...attributes}>{children}</span>;
 };
 
-const annotations = [
+const stream = `This is editable rich text, much better than a <textarea>!
+Since it's rich text, you can do things like turn a selection of text bold and underline, or add a semantically rendered block quote in the middle of the page, like this:
+A wise quote.
+Try it out for yourself!
+`;
+
+const initialAnnotations = [
   {
-    id: "id_1_This", // "This"
-    text: "This",
-    anchorOffset: 0,
-    focusOffset: 4,
+    id: "annotation_id_1", // "This is"
+    text: "This is",
+    range: {
+      anchor: {
+        path: [0, 0],
+        offset: 0,
+      },
+      focus: {
+        path: [0, 0],
+        offset: 7,
+      },
+    },
   },
   {
-    id: "id_2_editable",
-    text: "editable",
-    anchorOffset: 8,
-    focusOffset: 16,
+    id: "annotation_id_2",
+    text: "is editable",
+    range: {
+      anchor: {
+        path: [0, 0],
+        offset: 5,
+      },
+      focus: {
+        path: [0, 0],
+        offset: 16,
+      },
+    },
   },
 ];
 
@@ -118,11 +175,27 @@ const initialEditorValue = [
     type: "paragraph",
     children: [
       {
-        text: "This is editable ",
+        text: "This",
         blue: ["blue_1"],
+        annotations: ["annotation_id_1"],
       },
       {
-        text: "rich",
+        text: " ",
+        blue: ["blue_1"],
+        annotations: ["annotation_id_1"],
+      },
+      {
+        text: "is",
+        blue: ["blue_1"],
+        annotations: ["annotation_id_1", "annotation_id_2"],
+      },
+      {
+        text: " editable",
+        blue: ["blue_1"],
+        annotations: ["annotation_id_2"],
+      },
+      {
+        text: " rich",
         blue: ["blue_1", "blue_2", "blue_3"],
       },
       { text: " text, ", blue: ["blue_2"] },
@@ -145,14 +218,6 @@ const initialEditorValue = [
           ", or add a semantically rendered block quote in the middle of the page, like this:",
       },
     ],
-  },
-  {
-    type: "block-quote",
-    children: [{ text: "A wise quote." }],
-  },
-  {
-    type: "paragraph",
-    children: [{ text: "Try it out for yourself!" }],
   },
 ];
 export default LeafAnnotations;
