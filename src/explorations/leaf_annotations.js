@@ -1,7 +1,7 @@
 // import "@atlaskit/css-reset";
 import React, { useCallback, useMemo, useState } from "react";
 import { withHistory } from "slate-history";
-import { createEditor } from "slate";
+import { createEditor, useEditor } from "slate";
 import { Slate, Editable, withReact } from "slate-react";
 
 import { EditableContainer, Page } from "./components/styled-components";
@@ -13,22 +13,7 @@ const LeafAnnotations = () => {
 
   const renderElement = useCallback((props) => <Element {...props} />, []);
   const renderLeaf = useCallback((props) => <Leaf {...props} />, []);
-  const baseEditor = useMemo(() => withHistory(withReact(createEditor())), []);
-
-  const withAnnotations = (editorInstance) => {
-    // example
-    const { addMark } = editorInstance;
-    editorInstance.addMark = (editor, key, val) => {
-      console.log("Key = ", key);
-      console.log("Value = ", val);
-      // remember to fallback on default behaviour
-      addMark(editor, key, val);
-    };
-
-    return editorInstance; // extended editor
-  };
-
-  const editor = withAnnotations(baseEditor);
+  const editor = useMemo(() => withHistory(withReact(createEditor())), []);
 
   return (
     <Slate
