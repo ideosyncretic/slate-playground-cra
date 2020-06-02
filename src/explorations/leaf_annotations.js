@@ -151,23 +151,6 @@ const Leaf = ({ attributes, children, leaf }) => {
     }
   }
 
-  // example of arbitrary property
-  if (leaf.blue) {
-    // find out if depth is 0, 1, 2
-    let opacity;
-    leaf.blue.length >= 2 ? (opacity = 1) : (opacity = 0.5);
-
-    children = (
-      <span
-        style={{
-          color: `rgba(0,0,255, ${opacity})`,
-        }}
-      >
-        {children}
-      </span>
-    );
-  }
-
   return <span {...attributes}>{children}</span>;
 };
 
@@ -214,30 +197,24 @@ const initialEditorValue = [
     children: [
       {
         text: "This",
-        blue: ["blue_1"],
         "ANNOTATION-1": true,
       },
       {
         text: " ",
-        blue: ["blue_1"],
         "ANNOTATION-1": true,
       },
       {
         text: "is",
-        blue: ["blue_1"],
         "ANNOTATION-1": true,
         "ANNOTATION-2": true,
       },
       {
         text: " editable",
-        blue: ["blue_1"],
         "ANNOTATION-2": true,
       },
       {
-        text: " rich",
-        blue: ["blue_1", "blue_2", "blue_3"],
+        text: " rich text, ",
       },
-      { text: " text, ", blue: ["blue_2"] },
       { text: "much", italic: true },
       { text: " better than a " },
       { text: "<textarea>", code: true },
