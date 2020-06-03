@@ -68,7 +68,8 @@ const LeafAnnotations = () => {
       <Page>
         <PageContent>
           <Toolbar>
-            <MarkButton format="annotated" icon="comment_bank" />
+            <AddAnnotationButton icon="add_comment" />
+            <ClearAnnotationsButton icon="clear" />
             <MarkButton format="bold" icon="format_bold" />
             <MarkButton format="italic" icon="format_italic" />
             <MarkButton format="underline" icon="format_underlined" />
@@ -140,22 +141,22 @@ const Leaf = ({ attributes, children, leaf }) => {
   }
 
   // if leaf has annotations
-  if (leaf.annotationCount) {
-    const { annotationCount } = leaf;
-    if (annotationCount === 1) {
+  if (leaf.annotations) {
+    const numberOfAnnotations = leaf.annotations.length;
+    if (numberOfAnnotations === 1) {
       children = (
         <span
-          style={{ backgroundColor: "salmon" }}
+          style={{ backgroundColor: "#f6e58d" }}
           onClick={() => console.log("I'm annotated once!")}
         >
           {children}
         </span>
       );
     }
-    if (annotationCount === 2) {
+    if (numberOfAnnotations > 1) {
       children = (
         <span
-          style={{ backgroundColor: "red" }}
+          style={{ backgroundColor: "#f9ca24" }}
           onClick={() => console.log("I'm annotated more than once!")}
         >
           {children}
@@ -214,12 +215,12 @@ const BlockButton = ({ format, icon }) => {
 
 // MARKS
 
-const isMarkActive = (editor, format) => {
+export const isMarkActive = (editor, format) => {
   const marks = Editor.marks(editor);
   return marks ? marks[format] === true : false;
 };
 
-const toggleMark = (editor, format) => {
+export const toggleMark = (editor, format) => {
   const isActive = isMarkActive(editor, format);
 
   if (isActive) {
@@ -237,6 +238,60 @@ const MarkButton = ({ format, icon }) => {
       onMouseDown={(event) => {
         event.preventDefault();
         toggleMark(editor, format);
+      }}
+    >
+      <Icon>{icon}</Icon>
+    </Button>
+  );
+};
+
+const addAnnotation = (editor) => {
+  const currentMarks = Editor.marks(editor);
+  let currentAnnotations = [];
+
+  if (currentMarks && currentMarks["annotations"]) {
+    currentAnnotations = currentMarks["annotations"];
+  }
+
+  let newAnnotationId = uuidv4();
+
+  let updatedAnnotations = [...currentAnnotations, newAnnotationId];
+
+  Editor.addMark(editor, "annotations", updatedAnnotations);
+};
+
+const clearAnnotations = (editor) => {
+  Editor.removeMark(editor, "annotations");
+};
+
+const AddAnnotationButton = ({ annotations, icon }) => {
+  const editor = useSlate();
+  return (
+    <Button
+      active={true}
+      onMouseDown={(event) => {
+        event.preventDefault();
+        addAnnotation(editor);
+      }}
+    >
+      <Icon>{icon}</Icon>
+    </Button>
+  );
+};
+
+const ClearAnnotationsButton = ({ icon }) => {
+  const editor = useSlate();
+  const currentMarks = Editor.marks(editor);
+  let hasAnnotations = currentMarks && currentMarks["annotations"];
+
+  console.log("has annotations", hasAnnotations);
+  return (
+    <Button
+      active={hasAnnotations}
+      isDisabled={!hasAnnotations}
+      onMouseDown={(event) => {
+        event.preventDefault();
+        clearAnnotations(editor);
       }}
     >
       <Icon>{icon}</Icon>
@@ -281,30 +336,28 @@ const initialAnnotations = [
   },
 ];
 
+const firstAnnotationId = uuidv4();
+const secondAnnotationId = uuidv4();
+
 const initialEditorValue = [
   {
     type: "paragraph",
     children: [
       {
         text: "This",
-        annotationCount: 1,
-        "ANNOTATION-1": true,
+        annotations: [firstAnnotationId],
       },
       {
         text: " ",
-        annotationCount: 1,
-        "ANNOTATION-1": true,
+        annotations: [firstAnnotationId],
       },
       {
         text: "is",
-        annotationCount: 2,
-        "ANNOTATION-1": true,
-        "ANNOTATION-2": true,
+        annotations: [firstAnnotationId, secondAnnotationId],
       },
       {
         text: " editable",
-        annotationCount: 1,
-        "ANNOTATION-2": true,
+        annotations: [secondAnnotationId],
       },
       {
         text: " rich text, ",

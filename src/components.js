@@ -3,14 +3,14 @@ import ReactDOM from "react-dom";
 import { cx, css } from "emotion";
 
 export const Button = React.forwardRef(
-  ({ className, active, reversed, ...props }, ref) => (
+  ({ className, active, isDisabled, reversed, ...props }, ref) => (
     <span
       {...props}
       ref={ref}
       className={cx(
         className,
         css`
-          cursor: pointer;
+          cursor: ${isDisabled ? "not-allowed" : "pointer"};
           color: ${reversed
             ? active
               ? "white"
