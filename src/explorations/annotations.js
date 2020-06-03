@@ -21,6 +21,39 @@ import {
   PageContent,
 } from "./components/styled-components";
 
+const MyEditor = {
+  ...Editor,
+  annotateSelection: (editor) => {
+    const currentMarks = Editor.marks(editor);
+    // get current selection
+    const currentSelectionRange = editor.selection;
+
+    // current selection range must be not be collapsed to add annotation
+    if (
+      currentSelectionRange.anchor.offset !== currentSelectionRange.focus.offset
+    ) {
+      let currentAnnotations = [];
+
+      if (
+        currentMarks &&
+        currentMarks["annotations"] &&
+        currentMarks["annotations"].length > 0
+      ) {
+        currentAnnotations = currentMarks["annotations"];
+      }
+
+      let newAnnotationId = uuidv4();
+
+      let updatedAnnotations = [...currentAnnotations, newAnnotationId];
+
+      Editor.addMark(editor, "annotations", updatedAnnotations);
+    }
+  },
+  clearAnnotationsFromSelection: (editor) => {
+    Editor.removeMark(editor, "annotations");
+  },
+};
+
 const AnnotationsExample = () => {
   const [editorValue, setEditorValue] = useState(initialEditorValue);
   // const [annotations, setAnnotations] = useState(initialAnnotations);
@@ -28,13 +61,16 @@ const AnnotationsExample = () => {
   const renderElement = useCallback((props) => <Element {...props} />, []);
   const renderLeaf = useCallback((props) => <Leaf {...props} />, []);
 
-  const BaseEditor = useMemo(() => withHistory(withReact(createEditor())), []);
+  const EditorInstance = useMemo(
+    () => withHistory(withReact(createEditor())),
+    []
+  );
 
   return (
     <Page>
       <PageContent>
         <Slate
-          editor={BaseEditor}
+          editor={EditorInstance}
           value={editorValue}
           onChange={(newValue) => setEditorValue(newValue)}
         >
@@ -58,21 +94,23 @@ const AnnotationsExample = () => {
               placeholder="Enter some rich text…"
               spellCheck
               autoFocus
-              onKeyDown={(event) => {
-                for (const hotkey in HOTKEYS) {
-                  if (isHotkey(hotkey, event)) {
-                    event.preventDefault();
-                    const mark = HOTKEYS[hotkey];
-                    toggleMark(BaseEditor, mark);
-                  }
-                }
-              }}
+              onKeyDown={(event) => handleKeyDownEvent(EditorInstance, event)}
             />
           </EditableContainer>
         </Slate>
       </PageContent>
     </Page>
   );
+};
+
+const handleKeyDownEvent = (editor, event) => {
+  for (const hotkey in HOTKEYS) {
+    if (isHotkey(hotkey, event)) {
+      event.preventDefault();
+      const mark = HOTKEYS[hotkey];
+      toggleMark(editor, mark);
+    }
+  }
 };
 
 const Element = ({ attributes, children, element }) => {
@@ -111,7 +149,6 @@ const Leaf = ({ attributes, children, leaf }) => {
     children = <u>{children}</u>;
   }
 
-  // if leaf has annotations
   if (leaf.annotations) {
     const numberOfAnnotations = leaf.annotations.length;
     if (numberOfAnnotations === 1) {
@@ -125,37 +162,21 @@ const Leaf = ({ attributes, children, leaf }) => {
   return <span {...attributes}>{children}</span>;
 };
 
-const addAnnotation = (editor) => {
-  const currentMarks = Editor.marks(editor);
-  let currentAnnotations = [];
-
-  if (
-    currentMarks &&
-    currentMarks["annotations"] &&
-    currentMarks["annotations"].length > 0
-  ) {
-    currentAnnotations = currentMarks["annotations"];
-  }
-
-  let newAnnotationId = uuidv4();
-
-  let updatedAnnotations = [...currentAnnotations, newAnnotationId];
-
-  Editor.addMark(editor, "annotations", updatedAnnotations);
-};
-
-const clearAnnotations = (editor) => {
-  Editor.removeMark(editor, "annotations");
-};
-
-const AddAnnotationButton = ({ annotations, icon }) => {
+const AddAnnotationButton = ({ icon }) => {
   const editor = useSlate();
+  const currentMarks = Editor.marks(editor);
+  let currentAnnotations;
+  if (currentMarks) {
+    if (currentMarks["annotations"] && currentMarks["annotations"].length > 0) {
+      currentAnnotations = currentMarks["annotations"];
+    }
+  }
   return (
     <Button
-      active={true}
+      active={currentAnnotations}
       onMouseDown={(event) => {
         event.preventDefault();
-        addAnnotation(editor);
+        MyEditor.annotateSelection(editor);
       }}
     >
       <Icon>{icon}</Icon>
@@ -166,23 +187,24 @@ const AddAnnotationButton = ({ annotations, icon }) => {
 const ClearAnnotationsButton = ({ icon }) => {
   const editor = useSlate();
   const currentMarks = Editor.marks(editor);
-  let hasAnnotations = false;
+  // let hasAnnotations = false;
   if (
     currentMarks &&
     currentMarks["annotations"] &&
     currentMarks["annotations"].length > 0
   ) {
-    hasAnnotations = true;
+    // hasAnnotations = true;
     console.log("Annotations: ", currentMarks["annotations"]);
   }
 
   return (
     <Button
-      active={hasAnnotations}
-      isDisabled={!hasAnnotations}
+      active={true}
+      // active={hasAnnotations}
+      // isDisabled={!hasAnnotations}
       onMouseDown={(event) => {
         event.preventDefault();
-        clearAnnotations(editor);
+        MyEditor.clearAnnotationsFromSelection(editor);
       }}
     >
       <Icon>{icon}</Icon>
@@ -193,34 +215,34 @@ const ClearAnnotationsButton = ({ icon }) => {
 const firstAnnotationId = "d4c3d492-fdec-4eb0-9626-7852403de9c1";
 const secondAnnotationId = "220cd04d-65c9-405e-aaaa-837f1543dc35";
 
-const initialAnnotations = [
-  {
-    id: firstAnnotationId, // "This is"
-    range: {
-      anchor: {
-        path: [0, 0],
-        offset: 0,
-      },
-      focus: {
-        path: [0, 0],
-        offset: 7,
-      },
-    },
-  },
-  {
-    id: secondAnnotationId, // "is editable"
-    range: {
-      anchor: {
-        path: [0, 0],
-        offset: 5,
-      },
-      focus: {
-        path: [0, 0],
-        offset: 16,
-      },
-    },
-  },
-];
+// const initialAnnotations = [
+//   {
+//     id: firstAnnotationId, // "This is"
+//     range: {
+//       anchor: {
+//         path: [0, 0],
+//         offset: 0,
+//       },
+//       focus: {
+//         path: [0, 0],
+//         offset: 7,
+//       },
+//     },
+//   },
+//   {
+//     id: secondAnnotationId, // "is editable"
+//     range: {
+//       anchor: {
+//         path: [0, 0],
+//         offset: 5,
+//       },
+//       focus: {
+//         path: [0, 0],
+//         offset: 16,
+//       },
+//     },
+//   },
+// ];
 
 const initialEditorValue = [
   {

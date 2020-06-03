@@ -40,20 +40,18 @@ const RichTextExample = () => {
         placeholder="Enter some rich text…"
         spellCheck
         autoFocus
-        onKeyDown={(event) => handleKeyDownEvent(editor, event)}
+        onKeyDown={(event) => {
+          for (const hotkey in HOTKEYS) {
+            if (isHotkey(hotkey, event)) {
+              event.preventDefault();
+              const mark = HOTKEYS[hotkey];
+              toggleMark(editor, mark);
+            }
+          }
+        }}
       />
     </Slate>
   );
-};
-
-const handleKeyDownEvent = (editor, event) => {
-  for (const hotkey in HOTKEYS) {
-    if (isHotkey(hotkey, event)) {
-      event.preventDefault();
-      const mark = HOTKEYS[hotkey];
-      toggleMark(editor, mark);
-    }
-  }
 };
 
 const toggleBlock = (editor, format) => {
