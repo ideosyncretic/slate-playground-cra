@@ -21,11 +21,9 @@ import {
   PageContent,
 } from "./components/styled-components";
 
-const ANNOTATION_ID_PREFIX = "ANNOTATION-";
-
 const AnnotationsExample = () => {
   const [editorValue, setEditorValue] = useState(initialEditorValue);
-  const [annotations, setAnnotations] = useState(initialAnnotations);
+  // const [annotations, setAnnotations] = useState(initialAnnotations);
 
   const renderElement = useCallback((props) => <Element {...props} />, []);
   const renderLeaf = useCallback((props) => <Leaf {...props} />, []);
@@ -175,7 +173,7 @@ const ClearAnnotationsButton = ({ icon }) => {
     currentMarks["annotations"].length > 0
   ) {
     hasAnnotations = true;
-    console.log("has annotations", currentMarks["annotations"]);
+    console.log("Annotations: ", currentMarks["annotations"]);
   }
 
   return (
