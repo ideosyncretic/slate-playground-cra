@@ -1,13 +1,13 @@
 import React from "react";
 // import Highlights from "./explorations/highlight_decorator";
 // import RichTextExample from "./examples/richtext";
-import LeafAnnotations from "./explorations/leaf_annotations";
+import Annotations from "./explorations/annotations";
 
 const App = () => {
   return (
     <>
       {/* <Highlights></Highlights> */}
-      <LeafAnnotations></LeafAnnotations>
+      <Annotations></Annotations>
       {/* <RichTextExample></RichTextExample> */}
     </>
   );

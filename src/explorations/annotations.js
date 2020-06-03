@@ -8,6 +8,12 @@ import isHotkey from "is-hotkey";
 import styled from "styled-components";
 
 import { Button, Icon } from "../components";
+import {
+  HOTKEYS,
+  BlockButton,
+  MarkButton,
+  toggleMark,
+} from "../examples/richtext";
 
 import {
   EditableContainer,
@@ -15,18 +21,9 @@ import {
   PageContent,
 } from "./components/styled-components";
 
-// import { Toolbar } from "../components";
-
-const HOTKEYS = {
-  "mod+b": "bold",
-  "mod+i": "italic",
-  "mod+u": "underline",
-  "mod+`": "code",
-};
-
 const ANNOTATION_ID_PREFIX = "ANNOTATION-";
 
-const LeafAnnotations = () => {
+const AnnotationsExample = () => {
   const [editorValue, setEditorValue] = useState(initialEditorValue);
   const [annotations, setAnnotations] = useState(initialAnnotations);
 
@@ -35,38 +32,14 @@ const LeafAnnotations = () => {
 
   const BaseEditor = useMemo(() => withHistory(withReact(createEditor())), []);
 
-  // const CodexEditor = {
-  //   ...BaseEditor,
-
-  //   annotateSelection(editor) {
-  //     const newAnnotation = {
-  //       id: ANNOTATION_ID_PREFIX + uuidv4(),
-  //       range: editor.selection,
-  //     };
-
-  //     // update separate annotation state
-  //     setAnnotations({ ...annotations, newAnnotation });
-
-  //     // add an annotation id property to selection's nodes
-  //     Transforms.setNodes(
-  //       editor,
-  //       { [newAnnotation.id]: newAnnotation },
-  //       {
-  //         match: (node) => Text.isText(node),
-  //         split: true,
-  //       }
-  //     );
-  //   },
-  // };
-
   return (
-    <Slate
-      editor={BaseEditor}
-      value={editorValue}
-      onChange={(newValue) => setEditorValue(newValue)}
-    >
-      <Page>
-        <PageContent>
+    <Page>
+      <PageContent>
+        <Slate
+          editor={BaseEditor}
+          value={editorValue}
+          onChange={(newValue) => setEditorValue(newValue)}
+        >
           <Toolbar>
             <AddAnnotationButton icon="add_comment" />
             <ClearAnnotationsButton icon="clear" />
@@ -98,9 +71,9 @@ const LeafAnnotations = () => {
               }}
             />
           </EditableContainer>
-        </PageContent>
-      </Page>
-    </Slate>
+        </Slate>
+      </PageContent>
+    </Page>
   );
 };
 
@@ -144,112 +117,25 @@ const Leaf = ({ attributes, children, leaf }) => {
   if (leaf.annotations) {
     const numberOfAnnotations = leaf.annotations.length;
     if (numberOfAnnotations === 1) {
-      children = (
-        <span
-          style={{ backgroundColor: "#f6e58d" }}
-          onClick={() => console.log("I'm annotated once!")}
-        >
-          {children}
-        </span>
-      );
+      children = <span style={{ backgroundColor: "#f6e58d" }}>{children}</span>;
     }
     if (numberOfAnnotations > 1) {
-      children = (
-        <span
-          style={{ backgroundColor: "#f9ca24" }}
-          onClick={() => console.log("I'm annotated more than once!")}
-        >
-          {children}
-        </span>
-      );
+      children = <span style={{ backgroundColor: "#f9ca24" }}>{children}</span>;
     }
   }
 
   return <span {...attributes}>{children}</span>;
 };
 
-const LIST_TYPES = ["numbered-list", "bulleted-list"];
-
-// BLOCKS
-const isBlockActive = (editor, format) => {
-  const [match] = Editor.nodes(editor, {
-    match: (n) => n.type === format,
-  });
-
-  return !!match;
-};
-
-const toggleBlock = (editor, format) => {
-  const isActive = isBlockActive(editor, format);
-  const isList = LIST_TYPES.includes(format);
-
-  Transforms.unwrapNodes(editor, {
-    match: (n) => LIST_TYPES.includes(n.type),
-    split: true,
-  });
-
-  Transforms.setNodes(editor, {
-    type: isActive ? "paragraph" : isList ? "list-item" : format,
-  });
-
-  if (!isActive && isList) {
-    const block = { type: format, children: [] };
-    Transforms.wrapNodes(editor, block);
-  }
-};
-
-const BlockButton = ({ format, icon }) => {
-  const editor = useSlate();
-  return (
-    <Button
-      active={isBlockActive(editor, format)}
-      onMouseDown={(event) => {
-        event.preventDefault();
-        toggleBlock(editor, format);
-      }}
-    >
-      <Icon>{icon}</Icon>
-    </Button>
-  );
-};
-
-// MARKS
-
-export const isMarkActive = (editor, format) => {
-  const marks = Editor.marks(editor);
-  return marks ? marks[format] === true : false;
-};
-
-export const toggleMark = (editor, format) => {
-  const isActive = isMarkActive(editor, format);
-
-  if (isActive) {
-    Editor.removeMark(editor, format);
-  } else {
-    Editor.addMark(editor, format, true);
-  }
-};
-
-const MarkButton = ({ format, icon }) => {
-  const editor = useSlate();
-  return (
-    <Button
-      active={isMarkActive(editor, format)}
-      onMouseDown={(event) => {
-        event.preventDefault();
-        toggleMark(editor, format);
-      }}
-    >
-      <Icon>{icon}</Icon>
-    </Button>
-  );
-};
-
 const addAnnotation = (editor) => {
   const currentMarks = Editor.marks(editor);
   let currentAnnotations = [];
 
-  if (currentMarks && currentMarks["annotations"]) {
+  if (
+    currentMarks &&
+    currentMarks["annotations"] &&
+    currentMarks["annotations"].length > 0
+  ) {
     currentAnnotations = currentMarks["annotations"];
   }
 
@@ -282,9 +168,16 @@ const AddAnnotationButton = ({ annotations, icon }) => {
 const ClearAnnotationsButton = ({ icon }) => {
   const editor = useSlate();
   const currentMarks = Editor.marks(editor);
-  let hasAnnotations = currentMarks && currentMarks["annotations"];
+  let hasAnnotations = false;
+  if (
+    currentMarks &&
+    currentMarks["annotations"] &&
+    currentMarks["annotations"].length > 0
+  ) {
+    hasAnnotations = true;
+    console.log("has annotations", currentMarks["annotations"]);
+  }
 
-  console.log("has annotations", hasAnnotations);
   return (
     <Button
       active={hasAnnotations}
@@ -299,19 +192,12 @@ const ClearAnnotationsButton = ({ icon }) => {
   );
 };
 
-// const stream = `This is editable rich text, much better than a <textarea>!
-// Since it's rich text, you can do things like turn a selection of text bold and underline, or add a semantically rendered block quote in the middle of the page, like this:
-// A wise quote.
-// Try it out for yourself!
-// `;
-
 const firstAnnotationId = "d4c3d492-fdec-4eb0-9626-7852403de9c1";
 const secondAnnotationId = "220cd04d-65c9-405e-aaaa-837f1543dc35";
 
 const initialAnnotations = [
   {
     id: firstAnnotationId, // "This is"
-    // parentTextString: "This is",
     range: {
       anchor: {
         path: [0, 0],
@@ -325,7 +211,6 @@ const initialAnnotations = [
   },
   {
     id: secondAnnotationId, // "is editable"
-    // parentTextString: "is editable",
     range: {
       anchor: {
         path: [0, 0],
@@ -391,11 +276,10 @@ const initialEditorValue = [
     children: [{ text: "Try it out for yourself!" }],
   },
 ];
-export default LeafAnnotations;
+export default AnnotationsExample;
 
 const Toolbar = styled.div`
   width: 100%;
-  ${"" /* padding: 16px; */}
   background: white;
   border-bottom: 3px solid #eeeeee;
   span {
