@@ -23,40 +23,74 @@ import {
 
 const MyEditor = {
   ...Editor,
-  annotateSelection: (editor) => {
+  annotateSelection: (editor, annotations, setAnnotations) => {
     const currentMarks = Editor.marks(editor);
-    // get current selection
     const currentSelectionRange = editor.selection;
 
     // current selection range must be not be collapsed to add annotation
     if (
       currentSelectionRange.anchor.offset !== currentSelectionRange.focus.offset
     ) {
-      let currentAnnotations = [];
+      let currentAnnotationMarks = [];
 
+      // if marks and annotations are present
       if (
         currentMarks &&
         currentMarks["annotations"] &&
         currentMarks["annotations"].length > 0
       ) {
-        currentAnnotations = currentMarks["annotations"];
+        currentAnnotationMarks = currentMarks["annotations"];
       }
 
       let newAnnotationId = uuidv4();
 
-      let updatedAnnotations = [...currentAnnotations, newAnnotationId];
+      console.log("annotations state", annotations);
 
-      Editor.addMark(editor, "annotations", updatedAnnotations);
+      // update state
+      setAnnotations([
+        ...annotations,
+        {
+          id: newAnnotationId,
+          range: currentSelectionRange,
+        },
+      ]);
+
+      // update marks
+      Editor.addMark(editor, "annotations", [
+        ...currentAnnotationMarks,
+        newAnnotationId,
+      ]);
     }
   },
-  clearAnnotationsFromSelection: (editor) => {
-    Editor.removeMark(editor, "annotations");
+  clearAnnotationsFromSelection: (editor, annotations, setAnnotations) => {
+    const currentMarks = Editor.marks(editor);
+    let currentAnnotationMarks;
+    let updatedAnnotations;
+    if (currentMarks) {
+      if (
+        currentMarks["annotations"] &&
+        currentMarks["annotations"].length > 0
+      ) {
+        currentAnnotationMarks = currentMarks["annotations"];
+        updatedAnnotations = annotations.filter(
+          (annotation) => currentAnnotationMarks.indexOf(annotation.id) < 0
+        );
+
+        console.log("currentAnnotationMarks to remove", currentAnnotationMarks);
+
+        // update state
+        setAnnotations(updatedAnnotations);
+
+        // update marks
+        Editor.removeMark(editor, "annotations");
+      }
+    }
   },
 };
 
 const AnnotationsExample = () => {
   const [editorValue, setEditorValue] = useState(initialEditorValue);
-  // const [annotations, setAnnotations] = useState(initialAnnotations);
+  const [annotations, setAnnotations] = useState(initialAnnotations);
 
   const renderElement = useCallback((props) => <Element {...props} />, []);
   const renderLeaf = useCallback((props) => <Leaf {...props} />, []);
@@ -75,8 +109,14 @@ const AnnotationsExample = () => {
           onChange={(newValue) => setEditorValue(newValue)}
         >
           <Toolbar>
-            <AddAnnotationButton icon="add_comment" />
-            <ClearAnnotationsButton icon="clear" />
+            <AddAnnotationButton
+              annotations={annotations}
+              setAnnotations={setAnnotations}
+            />
+            <ClearAnnotationsButton
+              annotations={annotations}
+              setAnnotations={setAnnotations}
+            />
             <MarkButton format="bold" icon="format_bold" />
             <MarkButton format="italic" icon="format_italic" />
             <MarkButton format="underline" icon="format_underlined" />
@@ -152,97 +192,106 @@ const Leaf = ({ attributes, children, leaf }) => {
   if (leaf.annotations) {
     const numberOfAnnotations = leaf.annotations.length;
     if (numberOfAnnotations === 1) {
-      children = <span style={{ backgroundColor: "#f6e58d" }}>{children}</span>;
+      children = (
+        <span
+          onClick={() =>
+            console.log("onClick leaf.annotations ", leaf.annotations)
+          }
+          style={{ backgroundColor: "#f6e58d" }}
+        >
+          {children}
+        </span>
+      );
     }
     if (numberOfAnnotations > 1) {
-      children = <span style={{ backgroundColor: "#f9ca24" }}>{children}</span>;
+      children = (
+        <span
+          onClick={() =>
+            console.log("onClick leaf.annotations ", leaf.annotations)
+          }
+          style={{ backgroundColor: "#f9ca24" }}
+        >
+          {children}
+        </span>
+      );
     }
   }
 
   return <span {...attributes}>{children}</span>;
 };
 
-const AddAnnotationButton = ({ icon }) => {
+const AddAnnotationButton = ({ annotations, setAnnotations }) => {
   const editor = useSlate();
   const currentMarks = Editor.marks(editor);
-  let currentAnnotations;
+  let currentAnnotationMarks;
   if (currentMarks) {
     if (currentMarks["annotations"] && currentMarks["annotations"].length > 0) {
-      currentAnnotations = currentMarks["annotations"];
+      currentAnnotationMarks = currentMarks["annotations"];
     }
   }
   return (
     <Button
-      active={currentAnnotations}
+      active={currentAnnotationMarks}
       onMouseDown={(event) => {
         event.preventDefault();
-        MyEditor.annotateSelection(editor);
+        MyEditor.annotateSelection(editor, annotations, setAnnotations);
       }}
     >
-      <Icon>{icon}</Icon>
+      <Icon>{"add_comment"}</Icon>
     </Button>
   );
 };
 
-const ClearAnnotationsButton = ({ icon }) => {
+const ClearAnnotationsButton = ({ annotations, setAnnotations }) => {
   const editor = useSlate();
-  const currentMarks = Editor.marks(editor);
-  // let hasAnnotations = false;
-  if (
-    currentMarks &&
-    currentMarks["annotations"] &&
-    currentMarks["annotations"].length > 0
-  ) {
-    // hasAnnotations = true;
-    console.log("Annotations: ", currentMarks["annotations"]);
-  }
-
   return (
     <Button
       active={true}
-      // active={hasAnnotations}
-      // isDisabled={!hasAnnotations}
       onMouseDown={(event) => {
         event.preventDefault();
-        MyEditor.clearAnnotationsFromSelection(editor);
+        MyEditor.clearAnnotationsFromSelection(
+          editor,
+          annotations,
+          setAnnotations
+        );
       }}
     >
-      <Icon>{icon}</Icon>
+      <Icon>{"clear"}</Icon>
     </Button>
   );
 };
 
-const firstAnnotationId = "d4c3d492-fdec-4eb0-9626-7852403de9c1";
-const secondAnnotationId = "220cd04d-65c9-405e-aaaa-837f1543dc35";
+const firstAnnotationId = "HardcodedAnnotation1";
+const secondAnnotationId = "HardcodedAnnotation2";
 
-// const initialAnnotations = [
-//   {
-//     id: firstAnnotationId, // "This is"
-//     range: {
-//       anchor: {
-//         path: [0, 0],
-//         offset: 0,
-//       },
-//       focus: {
-//         path: [0, 0],
-//         offset: 7,
-//       },
-//     },
-//   },
-//   {
-//     id: secondAnnotationId, // "is editable"
-//     range: {
-//       anchor: {
-//         path: [0, 0],
-//         offset: 5,
-//       },
-//       focus: {
-//         path: [0, 0],
-//         offset: 16,
-//       },
-//     },
-//   },
-// ];
+const initialAnnotations = [
+  {
+    id: firstAnnotationId, // "This is"
+    range: {
+      anchor: {
+        path: [0, 0],
+        offset: 0,
+      },
+      focus: {
+        path: [0, 0],
+        offset: 7,
+      },
+    },
+  },
+  {
+    id: secondAnnotationId, // "is editable"
+    range: {
+      anchor: {
+        path: [0, 0],
+        offset: 5,
+      },
+      focus: {
+        path: [0, 0],
+        offset: 16,
+      },
+    },
+  },
+];
 
 const initialEditorValue = [
   {
