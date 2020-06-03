@@ -87,3 +87,7 @@ input:focus {
 [data-slate-editor] > * + * {
   margin-top: 1em;
 }
+
+.material-icons {
+  font-family: "Material Icons";
+}

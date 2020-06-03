@@ -2,12 +2,20 @@
 import React, { useCallback, useMemo, useState } from "react";
 import { withHistory } from "slate-history";
 import { createEditor, Editor, Transforms } from "slate";
-import { Slate, Editable, withReact, useEditor } from "slate-react";
+import { Slate, Editable, withReact, useSlate } from "slate-react";
 import { v4 as uuidv4 } from "uuid";
 import isHotkey from "is-hotkey";
+import styled from "styled-components";
 
-import { toggleMark } from "./helpers/marks";
-import { EditableContainer, Page } from "./components/styled-components";
+import { Button, Icon } from "../components";
+
+import {
+  EditableContainer,
+  Page,
+  PageContent,
+} from "./components/styled-components";
+
+// import { Toolbar } from "../components";
 
 const HOTKEYS = {
   "mod+b": "bold",
@@ -27,55 +35,69 @@ const LeafAnnotations = () => {
 
   const BaseEditor = useMemo(() => withHistory(withReact(createEditor())), []);
 
-  const CodexEditor = {
-    ...BaseEditor,
+  // const CodexEditor = {
+  //   ...BaseEditor,
 
-    annotateSelection(editor) {
-      const newAnnotation = {
-        id: ANNOTATION_ID_PREFIX + uuidv4(),
-        range: editor.selection,
-      };
+  //   annotateSelection(editor) {
+  //     const newAnnotation = {
+  //       id: ANNOTATION_ID_PREFIX + uuidv4(),
+  //       range: editor.selection,
+  //     };
 
-      // update separate annotation state
-      setAnnotations({ ...annotations, newAnnotation });
+  //     // update separate annotation state
+  //     setAnnotations({ ...annotations, newAnnotation });
 
-      // add an annotation id property to selection's nodes
-      Transforms.setNodes(
-        editor,
-        { [newAnnotation.id]: newAnnotation },
-        {
-          match: (node) => Text.isText(node),
-          split: true,
-        }
-      );
-    },
-  };
+  //     // add an annotation id property to selection's nodes
+  //     Transforms.setNodes(
+  //       editor,
+  //       { [newAnnotation.id]: newAnnotation },
+  //       {
+  //         match: (node) => Text.isText(node),
+  //         split: true,
+  //       }
+  //     );
+  //   },
+  // };
 
   return (
     <Slate
-      editor={CodexEditor}
+      editor={BaseEditor}
       value={editorValue}
       onChange={(newValue) => setEditorValue(newValue)}
     >
       <Page>
-        <EditableContainer>
-          <Editable
-            renderElement={renderElement}
-            renderLeaf={renderLeaf}
-            placeholder="Enter some rich text…"
-            spellCheck
-            autoFocus
-            onKeyDown={(event) => {
-              for (const hotkey in HOTKEYS) {
-                if (isHotkey(hotkey, event)) {
-                  event.preventDefault();
-                  const mark = HOTKEYS[hotkey];
-                  toggleMark(useEditor, mark);
+        <PageContent>
+          <Toolbar>
+            <MarkButton format="annotated" icon="comment_bank" />
+            <MarkButton format="bold" icon="format_bold" />
+            <MarkButton format="italic" icon="format_italic" />
+            <MarkButton format="underline" icon="format_underlined" />
+            <MarkButton format="code" icon="code" />
+            <BlockButton format="heading-one" icon="looks_one" />
+            <BlockButton format="heading-two" icon="looks_two" />
+            <BlockButton format="block-quote" icon="format_quote" />
+            <BlockButton format="numbered-list" icon="format_list_numbered" />
+            <BlockButton format="bulleted-list" icon="format_list_bulleted" />
+          </Toolbar>
+          <EditableContainer>
+            <Editable
+              renderElement={renderElement}
+              renderLeaf={renderLeaf}
+              placeholder="Enter some rich text…"
+              spellCheck
+              autoFocus
+              onKeyDown={(event) => {
+                for (const hotkey in HOTKEYS) {
+                  if (isHotkey(hotkey, event)) {
+                    event.preventDefault();
+                    const mark = HOTKEYS[hotkey];
+                    toggleMark(BaseEditor, mark);
+                  }
                 }
-              }
-            }}
-          />
-        </EditableContainer>
+              }}
+            />
+          </EditableContainer>
+        </PageContent>
       </Page>
     </Slate>
   );
@@ -117,18 +139,9 @@ const Leaf = ({ attributes, children, leaf }) => {
     children = <u>{children}</u>;
   }
 
-  // check if leaf has annotations
-  let annotationCount = 0;
-  Object.keys(leaf).length > 0 &&
-    Object.keys(leaf).map((key) => {
-      if (key.indexOf(ANNOTATION_ID_PREFIX) > -1) {
-        console.log("Found an annotation, id=", key);
-        annotationCount += 1;
-      }
-    });
-
   // if leaf has annotations
-  if (annotationCount) {
+  if (leaf.annotationCount) {
+    const { annotationCount } = leaf;
     if (annotationCount === 1) {
       children = (
         <span
@@ -143,7 +156,7 @@ const Leaf = ({ attributes, children, leaf }) => {
       children = (
         <span
           style={{ backgroundColor: "red" }}
-          onClick={() => console.log("I'm annotated multiple times!")}
+          onClick={() => console.log("I'm annotated more than once!")}
         >
           {children}
         </span>
@@ -152,6 +165,83 @@ const Leaf = ({ attributes, children, leaf }) => {
   }
 
   return <span {...attributes}>{children}</span>;
+};
+
+const LIST_TYPES = ["numbered-list", "bulleted-list"];
+
+// BLOCKS
+const isBlockActive = (editor, format) => {
+  const [match] = Editor.nodes(editor, {
+    match: (n) => n.type === format,
+  });
+
+  return !!match;
+};
+
+const toggleBlock = (editor, format) => {
+  const isActive = isBlockActive(editor, format);
+  const isList = LIST_TYPES.includes(format);
+
+  Transforms.unwrapNodes(editor, {
+    match: (n) => LIST_TYPES.includes(n.type),
+    split: true,
+  });
+
+  Transforms.setNodes(editor, {
+    type: isActive ? "paragraph" : isList ? "list-item" : format,
+  });
+
+  if (!isActive && isList) {
+    const block = { type: format, children: [] };
+    Transforms.wrapNodes(editor, block);
+  }
+};
+
+const BlockButton = ({ format, icon }) => {
+  const editor = useSlate();
+  return (
+    <Button
+      active={isBlockActive(editor, format)}
+      onMouseDown={(event) => {
+        event.preventDefault();
+        toggleBlock(editor, format);
+      }}
+    >
+      <Icon>{icon}</Icon>
+    </Button>
+  );
+};
+
+// MARKS
+
+const isMarkActive = (editor, format) => {
+  const marks = Editor.marks(editor);
+  return marks ? marks[format] === true : false;
+};
+
+const toggleMark = (editor, format) => {
+  const isActive = isMarkActive(editor, format);
+
+  if (isActive) {
+    Editor.removeMark(editor, format);
+  } else {
+    Editor.addMark(editor, format, true);
+  }
+};
+
+const MarkButton = ({ format, icon }) => {
+  const editor = useSlate();
+  return (
+    <Button
+      active={isMarkActive(editor, format)}
+      onMouseDown={(event) => {
+        event.preventDefault();
+        toggleMark(editor, format);
+      }}
+    >
+      <Icon>{icon}</Icon>
+    </Button>
+  );
 };
 
 const stream = `This is editable rich text, much better than a <textarea>!
@@ -197,19 +287,23 @@ const initialEditorValue = [
     children: [
       {
         text: "This",
+        annotationCount: 1,
         "ANNOTATION-1": true,
       },
       {
         text: " ",
+        annotationCount: 1,
         "ANNOTATION-1": true,
       },
       {
         text: "is",
+        annotationCount: 2,
         "ANNOTATION-1": true,
         "ANNOTATION-2": true,
       },
       {
         text: " editable",
+        annotationCount: 1,
         "ANNOTATION-2": true,
       },
       {
@@ -235,5 +329,23 @@ const initialEditorValue = [
       },
     ],
   },
+  {
+    type: "block-quote",
+    children: [{ text: "A wise quote." }],
+  },
+  {
+    type: "paragraph",
+    children: [{ text: "Try it out for yourself!" }],
+  },
 ];
 export default LeafAnnotations;
+
+const Toolbar = styled.div`
+  width: 100%;
+  ${"" /* padding: 16px; */}
+  background: white;
+  border-bottom: 3px solid #eeeeee;
+  span {
+    margin: 16px 0px 16px 8px;
+  }
+`;
