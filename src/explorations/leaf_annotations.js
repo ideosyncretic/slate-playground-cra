@@ -299,15 +299,18 @@ const ClearAnnotationsButton = ({ icon }) => {
   );
 };
 
-const stream = `This is editable rich text, much better than a <textarea>!
-Since it's rich text, you can do things like turn a selection of text bold and underline, or add a semantically rendered block quote in the middle of the page, like this:
-A wise quote.
-Try it out for yourself!
-`;
+// const stream = `This is editable rich text, much better than a <textarea>!
+// Since it's rich text, you can do things like turn a selection of text bold and underline, or add a semantically rendered block quote in the middle of the page, like this:
+// A wise quote.
+// Try it out for yourself!
+// `;
+
+const firstAnnotationId = "d4c3d492-fdec-4eb0-9626-7852403de9c1";
+const secondAnnotationId = "220cd04d-65c9-405e-aaaa-837f1543dc35";
 
 const initialAnnotations = [
   {
-    id: "ANNOTATION-1", // "This is"
+    id: firstAnnotationId, // "This is"
     // parentTextString: "This is",
     range: {
       anchor: {
@@ -321,7 +324,7 @@ const initialAnnotations = [
     },
   },
   {
-    id: "ANNOTATION-2", // "is editable"
+    id: secondAnnotationId, // "is editable"
     // parentTextString: "is editable",
     range: {
       anchor: {
@@ -335,9 +338,6 @@ const initialAnnotations = [
     },
   },
 ];
-
-const firstAnnotationId = uuidv4();
-const secondAnnotationId = uuidv4();
 
 const initialEditorValue = [
   {
